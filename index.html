@@ -40,8 +40,20 @@ h1{margin:0;font-family:var(--font-display);font-size:clamp(32px,5vw,52px);line-
 .stat b{font-family:var(--font-display);font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
 .stat span{font-size:13px;color:var(--muted)}
 .card{background:var(--surface);border-radius:18px}
-.chart-box{overflow-x:auto;padding:28px 20px 20px}
-.chart{position:relative;display:flex;justify-content:space-between;gap:10px;padding-left:58px;min-width:1500px}
+.chart-box{overflow-x:auto;padding:28px 0 20px;border-top:1px solid var(--line-soft)}
+.chart{position:relative;display:flex;justify-content:space-between;gap:10px;padding:0 24px 0 58px;width:max-content;min-width:100%;box-sizing:border-box}
+details.chart-wrap{overflow:hidden}
+details.chart-wrap>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;min-height:44px;box-sizing:border-box}
+details.chart-wrap>summary::-webkit-details-marker{display:none}
+details.chart-wrap>summary:focus-visible{outline:2px solid var(--focus);outline-offset:-2px;border-radius:18px}
+.sum-title{display:flex;flex-direction:column;gap:2px}
+.sum-title b{font-family:var(--font-display);font-size:20px}
+.sum-title span{font-size:13px;color:var(--muted)}
+.sum-btn{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--accent);white-space:nowrap}
+.sum-btn svg{transition:transform .2s}
+details[open] .sum-btn svg{transform:rotate(180deg)}
+details[open] .sum-btn .lbl-open{display:none}
+details:not([open]) .sum-btn .lbl-close{display:none}
 .grid{position:absolute;left:0;right:0;top:0;height:330px;pointer-events:none}
 .grid div{position:absolute;left:0;right:0;border-top:1px dashed var(--grid)}
 .grid div.base{border-top:2px solid var(--axis)}
@@ -121,11 +133,17 @@ tfoot .lbl{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppe
   </div>
 </header>
 
-<section class="card chart-box" aria-label="Comparativa de alturas">
-  <div class="chart" id="chart">
-    <div class="grid" aria-hidden="true" id="grid"></div>
+<details class="card chart-wrap" id="chart-details">
+  <summary>
+    <span class="sum-title"><b>Infografía a escala</b><span>14 árboles del carrito, de 18 a 175 mm de alto, dibujados a la misma escala</span></span>
+    <span class="sum-btn"><span class="lbl-open">Mostrar</span><span class="lbl-close">Ocultar</span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+  </summary>
+  <div class="chart-box" aria-label="Comparativa de alturas">
+    <div class="chart" id="chart">
+      <div class="grid" aria-hidden="true" id="grid"></div>
+    </div>
   </div>
-</section>
+</details>
 
 <section class="card table-card" aria-label="Pedido por persona">
   <div class="table-head">
