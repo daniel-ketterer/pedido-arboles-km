@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pedido árboles K&amp;M</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: cabecera con totales en vivo, gráfico a escala en caja con scroll, tabla de pedido editable debajo */
+html{color-scheme:light}
+body{margin:0}
+:root{
+  --bg:#F3F5F0; --surface:#FFFFFF; --surface-2:#F6F8F4; --fg:#1B271F; --muted:#4A5A50; --line:#D9E0D6; --line-soft:#E7ECE4;
+  --accent:#2F6142; --accent-soft:#DCEBD8; --pill-fg:#7A4E00; --pill-bg:#FBEFD5; --grid:#CDD6CA; --axis:#7B8A7F;
+  --input-bg:#FFFFFF; --input-line:#BFCABD; --focus:#2F6142; --ok:#2F6142; --warn:#8A5A00;
+  --font-display:'Space Grotesk', Inter, system-ui, sans-serif; --font-body:Inter, system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141A16; --surface:#1D2520; --surface-2:#222B25; --fg:#E7EDE7; --muted:#A9B7AD; --line:#34413A; --line-soft:#2B352F;
+  --accent:#8CC79B; --accent-soft:#25402D; --pill-fg:#F2C46D; --pill-bg:#3A2E15; --grid:#34413A; --axis:#6E7D73;
+  --input-bg:#141A16; --input-line:#46554B; --focus:#8CC79B; --ok:#8CC79B; --warn:#F2C46D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141A16; --surface:#1D2520; --surface-2:#222B25; --fg:#E7EDE7; --muted:#A9B7AD; --line:#34413A; --line-soft:#2B352F;
+  --accent:#8CC79B; --accent-soft:#25402D; --pill-fg:#F2C46D; --pill-bg:#3A2E15; --grid:#34413A; --axis:#6E7D73;
+  --input-bg:#141A16; --input-line:#46554B; --focus:#8CC79B; --ok:#8CC79B; --warn:#F2C46D; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1500px;margin:0 auto;padding-block:32px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:28px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:24px}
+.intro{display:flex;flex-direction:column;gap:12px;min-width:0;flex:1 1 560px}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{margin:0;font-family:var(--font-display);font-size:clamp(32px,5vw,52px);line-height:1.05;text-wrap:balance}
+.lead{margin:0;color:var(--muted);max-width:68ch}
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px}
+.legend span.item{display:flex;align-items:center;gap:7px}
+.dot{width:13px;height:13px;border-radius:50%;display:inline-block;flex:none}
+.stats{display:flex;gap:12px;flex-wrap:wrap}
+.stat{background:var(--surface);border-radius:14px;padding:16px 22px;display:flex;flex-direction:column;gap:4px;min-width:140px}
+.stat b{font-family:var(--font-display);font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.card{background:var(--surface);border-radius:18px}
+.chart-box{overflow-x:auto;padding:28px 20px 20px}
+.chart{position:relative;display:flex;justify-content:space-between;gap:10px;padding-left:58px;min-width:1500px}
+.grid{position:absolute;left:0;right:0;top:0;height:330px;pointer-events:none}
+.grid div{position:absolute;left:0;right:0;border-top:1px dashed var(--grid)}
+.grid div.base{border-top:2px solid var(--axis)}
+.grid div span{position:absolute;left:0;top:-18px;font-size:12px;color:var(--muted)}
+.tree{display:flex;flex-direction:column;align-items:center;flex:none}
+.tree .pic{height:330px;display:flex;align-items:flex-end;justify-content:center}
+.tree .meta{margin-top:12px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.code{font-size:15px;font-weight:700}
+.h{font-family:var(--font-display);font-size:26px;font-weight:700;line-height:1}
+.h small{font-size:13px}
+.cnt{font-size:13px;color:var(--muted)}
+.pill{font-size:12px;font-weight:600;color:var(--pill-fg);background:var(--pill-bg);border-radius:99px;padding:3px 9px}
+.swatches{display:flex;gap:4px}
+.swatches .dot{width:12px;height:12px}
+.mixlbl{font-size:11px;color:var(--muted)}
+.table-card{padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.table-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 20px}
+h2{margin:0;font-family:var(--font-display);font-size:24px}
+.status{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.status .dot{width:9px;height:9px;background:var(--muted)}
+.status.ok .dot{background:var(--ok)} .status.warn{color:var(--warn)} .status.warn .dot{background:var(--warn)}
+.hint{margin:0;font-size:14px;color:var(--muted)}
+.tscroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.35;min-width:1180px}
+th{text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px 10px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
+td.total{font-family:var(--font-display);font-size:18px;font-weight:700;background:var(--accent-soft);border-radius:0}
+th.total{background:var(--accent-soft);color:var(--fg)}
+td.c{font-weight:700;white-space:nowrap}
+tr.bases td{background:var(--surface-2)}
+td.total.zero{color:var(--muted);font-weight:500}
+input.q{width:52px;height:36px;box-sizing:border-box;border:1px solid var(--input-line);border-radius:8px;background:var(--input-bg);color:var(--fg);font:600 15px var(--font-body);text-align:center;font-variant-numeric:tabular-nums;padding:0 4px;-moz-appearance:textfield}
+input.q::-webkit-outer-spin-button,input.q::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input.q:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+input.q.has{border-color:var(--accent);background:var(--accent-soft)}
+a.lnk{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+a.lnk:hover{text-decoration-thickness:2px}
+a:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
+tfoot td{border-bottom:none;font-weight:700;font-variant-numeric:tabular-nums}
+tfoot tr:first-child td{border-top:2px solid var(--line);padding-top:10px}
+td.share{font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums}
+td.share.zero{color:var(--muted)}
+td.total.auto::after{content:"auto";display:block;font:600 10px var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.basenote{font-size:12px;color:var(--muted);margin-top:2px}
+.warnline{color:var(--warn)}
+tfoot td.small{font-weight:400;font-size:12px;color:var(--muted)}
+tfoot tr.grand td{border-top:1px solid var(--line);font-size:16px}
+tfoot .lbl{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div class="intro">
+    <div class="eyebrow">kandmtrees.co.uk · pedido conjunto</div>
+    <h1>Nuestros árboles, a escala</h1>
+    <p class="lead">Cada silueta es un árbol tal y como viene (en los packs, todos los árboles son del mismo tamaño), dibujados a la misma escala entre sí. Abajo, cada uno apunta cuántas unidades quiere de cada artículo y se guarda para todos.</p>
+    <div class="legend">
+      <span class="item"><span class="dot" style="background:#C25A2A"></span><span class="dot" style="background:#8FA88A;margin-left:-11px"></span>Caducifolio color mixto (DX, packs)</span>
+      <span class="item"><span class="dot" style="background:#A89A3C"></span>Caducifolio DX suelto: verde amarillento</span>
+      <span class="item"><span class="dot" style="background:#3F7A3A"></span>Caducifolio verde (DG)</span>
+      <span class="item"><span class="dot" style="background:#214A32"></span>Abeto (F)</span>
+      <span class="item"><span class="dot" style="background:#3F7A3A"></span>Álamo / chopo (P)</span>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="st-units">0</b><span>artículos pedidos</span></div>
+    <div class="stat"><b id="st-trees">0</b><span>árboles en total</span></div>
+    <div class="stat"><b id="st-bases">0</b><span>packs de peanas</span></div>
+    <div class="stat"><b id="st-cost">£0,00</b><span>coste total</span></div>
+  </div>
+</header>
+
+<section class="card chart-box" aria-label="Comparativa de alturas">
+  <div class="chart" id="chart">
+    <div class="grid" aria-hidden="true" id="grid"></div>
+  </div>
+</section>
+
+<section class="card table-card" aria-label="Pedido por persona">
+  <div class="table-head">
+    <h2>Qué es cada artículo y cuántos queremos</h2>
+    <div class="status" id="status" role="status"><span class="dot"></span><span id="status-txt">Conectando…</span></div>
+  </div>
+  <p class="hint">Escribe en tu columna cuántas unidades quieres de cada artículo (un pack cuenta como 1). Se guarda solo y lo ven los demás al momento. Las peanas BA300 y BA400 se calculan solas según los árboles pedidos (packs de 12) y su coste se reparte según los árboles de cada uno.</p>
+  <p class="hint warnline" id="ba2" hidden></p>
+  <div class="tscroll">
+    <table>
+      <thead><tr>
+        <th class="num total">Total</th><th>Código</th>
+        <th class="num">Dani</th><th class="num">Cris</th><th class="num">Pepe</th>
+        <th>Nombre en la web</th><th>Tipo</th><th>Alto × ancho</th><th class="num">Árboles</th><th>Precio</th><th>Base</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+      <tfoot>
+        <tr><td class="num total" id="f-units">0</td><td class="lbl">Unidades</td><td class="num" id="f-dani">0</td><td class="num" id="f-cris">0</td><td class="num" id="f-pepe">0</td><td colspan="6"></td></tr>
+        <tr><td class="num" id="f-trees">£0,00</td><td class="lbl">Árboles</td><td class="num" id="t-dani">£0,00</td><td class="num" id="t-cris">£0,00</td><td class="num" id="t-pepe">£0,00</td><td colspan="6"></td></tr>
+        <tr><td class="num" id="f-bases">£0,00</td><td class="lbl">Peanas</td><td class="num" id="b-dani">£0,00</td><td class="num" id="b-cris">£0,00</td><td class="num" id="b-pepe">£0,00</td><td colspan="6" class="small">Reparto proporcional a los árboles con peana de cada uno</td></tr>
+        <tr class="grand"><td class="num total" id="f-cost">£0,00</td><td class="lbl">Total a pagar</td><td class="num" id="c-dani">£0,00</td><td class="num" id="c-cris">£0,00</td><td class="num" id="c-pepe">£0,00</td><td colspan="6"></td></tr>
+      </tfoot>
+    </table>
+  </div>
+</section>
+</div>
+
+<script>
+(function(){
+var B="https://kandmtrees.co.uk/shop/ols/products/";
+var PEOPLE=["dani","cris","pepe"];
+// kind: mix (pack color mixto), dxs (DX suelto), dg, fir, pop, base
+var ITEMS=[
+ {c:"DX100",n:"K&M DECIDUOUS MIXED COLOUR TREES DX100 PACK OF 12",u:"dx100-pack-of-12-dx18-mixedautumnblossom",t:"Mixto · 6 otoño + 6 flor",s:"18 × 18 mm",k:12,p:960,b:"—",kind:"mix",h:18,w:18,lab:"× 12 árboles"},
+ {c:"DX250",n:"K&M DECIDUOUS MIXED COLOUR TREES DX250",u:"dx250-pack-of-8-dx38",t:"Mixto · 4 otoño + 4 flor",s:"38 × 42 mm",k:8,p:850,b:"BA3",kind:"mix",h:38,w:42,lab:"× 8 árboles"},
+ {c:"DX300",n:"K&M DECIDUOUS MIXED COLOUR TREES DX300 PACK OF 6",u:"dx300-pack-of-6-dx50",t:"Mixto · 3 otoño + 3 flor",s:"50 × 52 mm",k:6,p:795,b:"BA3",kind:"mix",h:50,w:52,lab:"× 6 árboles"},
+ {c:"DG70",n:"K&M DECIDUOUS GREEN SINGLE TREE DG70",u:"dg70-single-tree-70mm",t:"Verde · suelto",s:"70 mm",k:1,p:225,b:"BA3",kind:"dg",h:70,w:67,lab:"× 1 árbol"},
+ {c:"DX400",n:"K&M DECIDUOUS MIXED COLOUR TREES DX400 PACK OF 4",u:"dx400-pack-of-4-dx70",t:"Mixto · 2 otoño + 2 flor",s:"70 × 67 mm",k:4,p:780,b:"BA3",kind:"mix",h:70,w:67,lab:"× 4 árboles"},
+ {c:"DG90",n:"K&M DECIDUOUS GREEN SINGLE TREE DG90",u:"dg90-single-tree-90mm",t:"Verde · suelto",s:"90 mm",k:1,p:240,b:"BA4",kind:"dg",h:90,w:72,lab:"× 1 árbol"},
+ {c:"DX90",n:"K&M DECIDUOUS MIXED COLOUR SINGLE TREE DX90",u:"dx90-single-tree-90mm",t:"Suelto · otoño o flor",s:"90 mm",k:1,p:240,b:"BA4",kind:"dxs",h:90,w:72,lab:"× 1 árbol"},
+ {c:"DX500",n:"K&M DECIDUOUS MIXED COLOUR TREES DX500 PACK OF 4",u:"dx500-pack-of-4-dx90",t:"Mixto · 2 otoño + 2 flor",s:"90 × 72 mm",k:4,p:855,b:"BA4",kind:"mix",h:90,w:72,lab:"× 4 árboles"},
+ {c:"F500",n:"K&M FIRS F500 PACK OF 6",u:"f500-pack-of-4-f90",t:"Abeto",s:"90 × 60 mm",k:6,p:1320,b:"BA4",kind:"fir",h:90,w:60,lab:"× 6 abetos"},
+ {c:"P600",n:"K&M TREES P600 PACK OF 4",u:"p600-pack-of-4-p125",t:"Álamo (poplar), muy estrecho",s:"105 × 18 mm",k:4,p:1150,b:"BA2",kind:"pop",h:105,w:18,lab:"× 4 álamos"},
+ {c:"DG125",n:"K&M DECIDUOUS GREEN SINGLE TREE DG125",u:"dg125-single-tree-125mm",t:"Verde · suelto",s:"125 × 80 mm",k:1,p:305,b:"BA4",kind:"dg",h:125,w:80,lab:"× 1 árbol"},
+ {c:"DX125",n:"K&M DECIDUOUS MIXED COLOUR SINGLE TREE DX125",u:"dx125-single-tree-125mm",t:"Suelto · otoño o flor",s:"125 mm",k:1,p:305,b:"BA4",kind:"dxs",h:125,w:80,lab:"× 1 árbol"},
+ {c:"F600",n:"K&M FIRS F600 PACK OF 4",u:"f600-pack-of-4-f125",t:"Abeto",s:"125 × 65 mm",k:4,p:1150,b:"BA4",kind:"fir",h:125,w:65,lab:"× 4 abetos"},
+ {c:"DG175",n:"K&M DECIDUOUS GREEN SINGLE TREE DG175",u:"dg175-single-tree",t:"Verde · suelto",s:"175 × 90 mm",k:1,p:405,b:"BA4",kind:"dg",h:175,w:90,lab:"× 1 árbol"},
+ {c:"BA300",n:"BA300 tree bases pack",u:"ba300-tree-bases-pack-of-12-ba3",t:"12 peanas medianas BA3",s:"—",k:0,p:520,b:"—",kind:"base"},
+ {c:"BA400",n:"BA400 tree base pack",u:"ba400-tree-base-pack-of-12-ba4",t:"12 peanas grandes BA4",s:"—",k:0,p:660,b:"—",kind:"base"}
+];
+var PAL={
+ mix:["#C25A2A","#3F6136","#8FA88A","#A89A3C"],
+ dxs:["#A89A3C","#8C7F2E","#B5A746","#C4B65A"],
+ dg:["#3F7A3A","#346B31","#4F8A43","#5C9A4A"]
+};
+var SCALE=1.8, CH=330;
+var NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){var e=document.createElementNS(NS,tag);for(var a in attrs)e.setAttribute(a,attrs[a]);if(parent)parent.appendChild(e);return e;}
+function svgFor(it){
+  var w=Math.round(it.w*SCALE), h=Math.round(it.h*SCALE);
+  var s=el("svg",{width:w,height:h,viewBox:"0 0 100 100",preserveAspectRatio:"none",role:"img","aria-label":it.c+", "+it.h+" mm de alto"});
+  if(it.kind==="fir"){
+    el("rect",{x:46,y:86,width:8,height:14,fill:"#6B4A2F"},s);
+    el("polygon",{points:"50,0 78,36 22,36",fill:"#2F6142"},s);
+    el("polygon",{points:"50,18 88,62 12,62",fill:"#28553A"},s);
+    el("polygon",{points:"50,40 99,90 1,90",fill:"#214A32"},s);
+  }else if(it.kind==="pop"){
+    el("rect",{x:40,y:84,width:20,height:16,fill:"#6B4A2F"},s);
+    el("ellipse",{cx:50,cy:44,rx:49,ry:44,fill:"#3F7A3A"},s);
+    el("ellipse",{cx:40,cy:38,rx:24,ry:30,fill:"#4F8A43"},s);
+  }else{
+    var p=it.kind==="mix"?["#C25A2A","#3F6136","#8FA88A","#A89A3C"]:PAL[it.kind];
+    el("rect",{x:45,y:60,width:10,height:40,fill:"#6B4A2F"},s);
+    el("ellipse",{cx:50,cy:36,rx:46,ry:34,fill:p[0]},s);
+    el("ellipse",{cx:30,cy:50,rx:28,ry:20,fill:p[1]},s);
+    el("ellipse",{cx:70,cy:46,rx:29,ry:24,fill:p[2]},s);
+    el("ellipse",{cx:62,cy:22,rx:22,ry:18,fill:p[3]},s);
+  }
+  return s;
+}
+function div(cls,text,parent){var d=document.createElement("div");if(cls)d.className=cls;if(text!=null)d.textContent=text;if(parent)parent.appendChild(d);return d;}
+
+// Grid
+var grid=document.getElementById("grid");
+var g0=div("base",null,grid);g0.style.bottom="0";
+[25,50,75,100,125,150,175].forEach(function(mm){var d=div(null,null,grid);d.style.bottom=(mm*SCALE)+"px";var sp=document.createElement("span");sp.textContent=mm+" mm";d.appendChild(sp);});
+
+// Chart
+var chart=document.getElementById("chart");
+ITEMS.filter(function(i){return i.kind!=="base";}).forEach(function(it){
+  var t=div("tree",null,chart);
+  t.style.width=Math.max(100,Math.round(it.w*SCALE))+"px";
+  var pic=div("pic",null,t);pic.appendChild(svgFor(it));
+  var m=div("meta",null,t);
+  div("code",it.c,m);
+  var h=div("h",String(it.h),m);var sm=document.createElement("small");sm.textContent=" mm";h.appendChild(sm);
+  div("cnt",it.lab,m);
+  if(it.k>1){
+    div("pill","Pack",m);
+    if(it.kind==="mix"){
+      var sw=div("swatches",null,m);sw.setAttribute("role","img");sw.setAttribute("aria-label","Colores mezclados: naranja, verde oscuro, verde grisáceo y verde amarillento");
+      PAL.mix.forEach(function(c){var d=document.createElement("span");d.className="dot";d.style.background=c;sw.appendChild(d);});
+      div("mixlbl","otoño + flor",m);
+    }
+  }
+});
+
+// Table
+var qty={}; // qty[code][person]
+ITEMS.forEach(function(it){qty[it.c]={dani:0,cris:0,pepe:0};});
+var tbody=document.getElementById("rows");
+var inputs={}, totals={}, shares={}, baseNotes={};
+var BASEPACK={BA3:"BA300",BA4:"BA400"};
+function money(p){return "£"+(p/100).toFixed(2).replace(".",",");}
+ITEMS.forEach(function(it){
+  var tr=document.createElement("tr");if(it.kind==="base")tr.className="bases";
+  var tdT=document.createElement("td");tdT.className="num total zero";tdT.textContent="0";tr.appendChild(tdT);totals[it.c]=tdT;
+  var tdC=document.createElement("td");tdC.className="c";tdC.textContent=it.c;tr.appendChild(tdC);
+  if(it.kind==="base"){
+    tdT.classList.add("auto");
+    shares[it.c]={};
+    PEOPLE.forEach(function(pp){
+      var td=document.createElement("td");td.className="num share";td.textContent="£0,00";
+      tr.appendChild(td);shares[it.c][pp]=td;
+    });
+  }else
+  PEOPLE.forEach(function(pp){
+    var td=document.createElement("td");td.className="num";
+    var inp=document.createElement("input");inp.type="number";inp.min="0";inp.step="1";inp.inputMode="numeric";inp.className="q";
+    inp.id="q-"+it.c+"-"+pp;inp.value="";inp.placeholder="0";
+    inp.setAttribute("aria-label",pp.charAt(0).toUpperCase()+pp.slice(1)+": unidades de "+it.c);
+    inp.addEventListener("input",function(){onEdit(it.c,pp,inp);});
+    inp.addEventListener("blur",function(){flush(it.c,pp);});
+    td.appendChild(inp);tr.appendChild(td);
+    (inputs[it.c]=inputs[it.c]||{})[pp]=inp;
+  });
+  var tdN=document.createElement("td");var a=document.createElement("a");a.className="lnk";a.href=B+it.u;a.target="_blank";a.rel="noopener";a.textContent=it.n;tdN.appendChild(a);
+  if(it.kind==="base"){var bn=document.createElement("div");bn.className="basenote";tdN.appendChild(bn);baseNotes[it.c]=bn;}
+  tr.appendChild(tdN);
+  [it.t,it.s,it.k?String(it.k):"—",money(it.p),it.b].forEach(function(v,i){var td=document.createElement("td");td.textContent=v;if(i===2)td.className="num";if(i===1)td.style.fontWeight="600";tr.appendChild(td);});
+  tbody.appendChild(tr);
+});
+
+function recalc(){
+  var units=0,trees=0,cost=0,pu={dani:0,cris:0,pepe:0},pc={dani:0,cris:0,pepe:0},pb={dani:0,cris:0,pepe:0},baseCost=0,basePacks=0;
+  // árboles que necesitan cada tipo de peana, por persona
+  var need={BA2:{dani:0,cris:0,pepe:0},BA3:{dani:0,cris:0,pepe:0},BA4:{dani:0,cris:0,pepe:0}};
+  ITEMS.forEach(function(it){
+    if(it.kind==="base")return;
+    var q=qty[it.c],t=q.dani+q.cris+q.pepe;
+    totals[it.c].textContent=String(t);totals[it.c].classList.toggle("zero",t===0);
+    units+=t;trees+=t*it.k;cost+=t*it.p;
+    PEOPLE.forEach(function(pp){pu[pp]+=q[pp];pc[pp]+=q[pp]*it.p;if(need[it.b])need[it.b][pp]+=q[pp]*it.k;});
+  });
+  ITEMS.forEach(function(it){
+    if(it.kind!=="base")return;
+    var bt=it.c==="BA300"?"BA3":"BA4", nb=need[bt], tot=nb.dani+nb.cris+nb.pepe;
+    var packs=Math.ceil(tot/12), c=packs*it.p, spare=packs*12-tot;
+    totals[it.c].textContent=String(packs);totals[it.c].classList.toggle("zero",packs===0);
+    basePacks+=packs;baseCost+=c;
+    // reparto proporcional en peniques, sin perder redondeo
+    var given=0;
+    PEOPLE.forEach(function(pp,i){
+      var s=tot?(i===PEOPLE.length-1?c-given:Math.round(c*nb[pp]/tot)):0;given+=s;
+      pb[pp]+=s;shares[it.c][pp].textContent=money(s);shares[it.c][pp].classList.toggle("zero",s===0);
+    });
+    baseNotes[it.c].textContent=tot?(tot+" árboles con peana "+bt+" → "+packs+(packs===1?" pack":" packs")+(spare?" (sobran "+spare+")":"")):"Sin árboles que usen "+bt+" todavía";
+  });
+  var ba2=need.BA2.dani+need.BA2.cris+need.BA2.pepe, warn=document.getElementById("ba2");
+  warn.hidden=ba2===0;
+  if(ba2)warn.textContent="Los álamos P600 usan peana BA2 (pack BA200), que no está en el carrito ni en estas cuentas: harían falta "+ba2+" ("+Math.ceil(ba2/12)+(Math.ceil(ba2/12)===1?" pack":" packs")+" de 12).";
+  var grand=cost+baseCost;
+  document.getElementById("st-units").textContent=units;
+  document.getElementById("st-trees").textContent=trees;
+  document.getElementById("st-bases").textContent=basePacks;
+  document.getElementById("st-cost").textContent=money(grand);
+  document.getElementById("f-units").textContent=units;
+  document.getElementById("f-trees").textContent=money(cost);
+  document.getElementById("f-bases").textContent=money(baseCost);
+  document.getElementById("f-cost").textContent=money(grand);
+  PEOPLE.forEach(function(pp){
+    document.getElementById("f-"+pp).textContent=pu[pp];
+    document.getElementById("t-"+pp).textContent=money(pc[pp]);
+    document.getElementById("b-"+pp).textContent=money(pb[pp]);
+    document.getElementById("c-"+pp).textContent=money(pc[pp]+pb[pp]);
+  });
+}
+function paint(code,pp){
+  var inp=inputs[code][pp],v=qty[code][pp];
+  if(document.activeElement!==inp)inp.value=v?String(v):"";
+  inp.classList.toggle("has",v>0);
+}
+function parse(v){var n=parseInt(v,10);if(!isFinite(n)||n<0)n=0;if(n>999)n=999;return n;}
+
+// Persistence
+var db=null, timers={}, pending={};
+var statusEl=document.getElementById("status"), statusTxt=document.getElementById("status-txt");
+function setStatus(kind,txt){statusEl.className="status"+(kind?" "+kind:"");statusTxt.textContent=txt;}
+function onEdit(code,pp,inp){
+  qty[code][pp]=parse(inp.value);inp.classList.toggle("has",qty[code][pp]>0);recalc();
+  var key=code+"_"+pp;pending[key]=true;
+  clearTimeout(timers[key]);timers[key]=setTimeout(function(){flush(code,pp);},500);
+}
+function flush(code,pp){
+  var key=code+"_"+pp;clearTimeout(timers[key]);
+  if(!pending[key])return;
+  if(!db){setStatus("warn","No se puede guardar en esta vista: los cambios no se comparten");return;}
+  setStatus("","Guardando…");
+  db.doc("cantidades/"+key).set({code:code,person:pp,n:qty[code][pp]}).then(function(){
+    delete pending[key];setStatus("ok","Guardado");
+  },function(e){
+    if(e&&e.code==="unavailable"){setTimeout(function(){flush(code,pp);},800+Math.random()*800);}
+    else setStatus("warn","No se ha podido guardar ("+(e&&e.code||"error")+"). Inténtalo de nuevo.");
+  });
+}
+recalc();
+var FIREBASE_CONFIG=window.FIREBASE_CONFIG;
+function startDb(){
+  if(!window.firebase||!FIREBASE_CONFIG||!FIREBASE_CONFIG.projectId){setStatus("warn","Falta configurar la base de datos: los cambios no se guardan");return;}
+  firebase.initializeApp(FIREBASE_CONFIG);
+  var fs=firebase.firestore();
+  db={doc:function(path){var r=fs.doc(path);return{set:function(d){return r.set(d).catch(function(e){throw {code:(e&&e.code==="unavailable")?"unavailable":(e&&e.code)||"error"};});}};}};
+  setStatus("","Cargando cantidades…");
+  fs.collection("cantidades").onSnapshot({includeMetadataChanges:true},function(snap){
+    snap.docs.forEach(function(doc){
+      var b=doc.data();if(!b||!qty[b.code]||!inputs[b.code]||PEOPLE.indexOf(b.person)<0)return;
+      var key=b.code+"_"+b.person;if(pending[key])return;
+      qty[b.code][b.person]=parse(b.n);paint(b.code,b.person);
+    });
+    recalc();
+    if(!Object.keys(pending).length)setStatus("ok",snap.metadata.fromCache?"Sincronizando…":"Guardado · al día");
+  },function(){setStatus("warn","Se ha perdido la conexión con los datos. Recarga la página.");});
+}
+startDb();
+})();
+</script>
+
+</body>
+</html>
